@@ -1,7 +1,7 @@
-const { AuthenticationError } = require('apollo-server-express');
-const { User, Product, Category, Order } = require('../models');
-const { signToken } = require('../utils/auth');
-const stripe = require('stripe')('sk_test_4eC39HqLyjWDarjtT1zdp7dc');
+const { AuthenticationError } = require("apollo-server-express");
+const { User, Product, Category, Order } = require("../models");
+const { signToken } = require("../utils/auth");
+const stripe = require("stripe")("sk_test_4eC39HqLyjWDarjtT1zdp7dc");
 
 const resolvers = {
   Query: {
@@ -21,16 +21,16 @@ const resolvers = {
         };
       }
 
-      return await Product.find(params).populate('category');
+      return await Product.find(params).populate("category");
     },
     product: async (parent, { _id }) => {
-      return await Product.findById(_id).populate('category');
+      return await Product.findById(_id).populate("category");
     },
     user: async (parent, args, context) => {
       if (context.user) {
         const user = await User.findById(context.user._id).populate({
-          path: 'orders.products',
-          populate: 'category',
+          path: "orders.products",
+          populate: "category",
         });
 
         user.orders.sort((a, b) => b.purchaseDate - a.purchaseDate);
@@ -38,25 +38,25 @@ const resolvers = {
         return user;
       }
 
-      throw new AuthenticationError('Not logged in');
+      throw new AuthenticationError("Not logged in");
     },
     order: async (parent, { _id }, context) => {
       if (context.user) {
         const user = await User.findById(context.user._id).populate({
-          path: 'orders.products',
-          populate: 'category',
+          path: "orders.products",
+          populate: "category",
         });
 
         return user.orders.id(_id);
       }
 
-      throw new AuthenticationError('Not logged in');
+      throw new AuthenticationError("Not logged in");
     },
 
     checkout: async (parent, args, context) => {
       const url = new URL(context.headers.referer).origin;
       const order = new Order({ products: args.products });
-      const { products } = await order.populate('products').execPopulate();
+      const { products } = await order.populate("products").execPopulate();
       const line_items = [];
 
       for (let i = 0; i < products.length; i++) {
@@ -71,7 +71,7 @@ const resolvers = {
         const price = await stripe.prices.create({
           product: product.id,
           unit_amount: products[i].price * 100,
-          currency: 'usd',
+          currency: "usd",
         });
 
         // add price id to the line items array
@@ -81,9 +81,9 @@ const resolvers = {
         });
       }
       const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
+        payment_method_types: ["card"],
         line_items,
-        mode: 'payment',
+        mode: "payment",
         success_url: `${url}/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${url}/`,
       });
@@ -110,7 +110,7 @@ const resolvers = {
         return order;
       }
 
-      throw new AuthenticationError('Not logged in');
+      throw new AuthenticationError("Not logged in");
     },
     updateUser: async (parent, args, context) => {
       if (context.user) {
@@ -119,7 +119,7 @@ const resolvers = {
         });
       }
 
-      throw new AuthenticationError('Not logged in');
+      throw new AuthenticationError("Not logged in");
     },
     updateProduct: async (parent, { _id, quantity }) => {
       const decrement = Math.abs(quantity) * -1;
@@ -134,13 +134,13 @@ const resolvers = {
       const user = await User.findOne({ email });
 
       if (!user) {
-        throw new AuthenticationError('Incorrect credentials');
+        throw new AuthenticationError("Incorrect credentials");
       }
 
       const correctPw = await user.isCorrectPassword(password);
 
       if (!correctPw) {
-        throw new AuthenticationError('Incorrect credentials');
+        throw new AuthenticationError("Incorrect credentials");
       }
 
       const token = signToken(user);
